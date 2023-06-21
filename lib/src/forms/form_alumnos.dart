@@ -1,14 +1,35 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+// ignore: must_be_immutable
 class AlumnoPage extends StatefulWidget {
+  late String? idAlumno;
+
+  AlumnoPage({super.key, this.idAlumno});
+
   @override
   State<AlumnoPage> createState() => _AlumnoPageState();
 }
 
 class _AlumnoPageState extends State<AlumnoPage> {
+  String titulo = "Registro Alumno";
+  String tituloBoton = "Guardar";
+  @override
+  void initState() {
+    // TODO: implement initState
+    titulo = widget.idAlumno != null ? "Editar Alumno" : titulo;
+    tituloBoton = widget.idAlumno != null ? "Editar" : tituloBoton;
+    super.initState();
+  }
+
   String _semestreSele = 'Segundo';
 
-  List<String> _semestreGrad = [
+  TextEditingController _numeroControl = TextEditingController();
+  TextEditingController _nombre = TextEditingController();
+
+  final List<String> _semestreGrad = [
     'Primer',
     'Segundo',
     'Tercer',
@@ -20,9 +41,6 @@ class _AlumnoPageState extends State<AlumnoPage> {
   String _groupSele = '6AMPR';
   List<String> _group = ['6AMPR', '6AMRH', '2AMRH'];
 
-  String _turnSele = 'Matutino';
-  List<String> _turn = ['Matutino', 'Vespertino'];
-
   String _espeSele = 'Programación';
   List<String> _espe = [
     'Programación',
@@ -32,19 +50,111 @@ class _AlumnoPageState extends State<AlumnoPage> {
     'Contabilidad'
   ];
 
+  Future _listarGrupos() async {
+    try {
+      final response =
+          await http.post(Uri.parse("http://127.0.0.1/justy/leergrupo.php"));
+
+      if (response.statusCode == 200) {
+        var datauser = jsonDecode(response.body);
+        var mensaje = datauser.toString();
+
+        if (mensaje.length > 0) {
+          // La consulta fue exitosa
+          return datauser;
+        }
+      }
+    } catch (e) {
+      print("ufff, entró en el catch");
+      print(e);
+      return [];
+    }
+    return [];
+  }
+
+  Future<int> _editarAlumno(String numeroControlOriginal, numeroControlCambio,
+      String nombre, String semestre, String grupo, String especialidad) async {
+    try {
+      final response = await http
+          .post(Uri.parse("http://127.0.0.1/justy/editaralumno.php"), body: {
+        "numero_control_original": numeroControlOriginal,
+        "numero_control": numeroControlCambio,
+        "nombre": nombre,
+        "semestre": semestre,
+        "grupo": grupo,
+        "especialidad": especialidad
+      });
+
+      if (response.statusCode == 200) {
+        print("vamos los pibes");
+        var datauser = json.decode(response.body);
+        var mensaje = datauser.toString();
+
+        if (mensaje == "Success") {
+          // La consulta fue exitosa
+          print("Alumno editado exitoso");
+          return 1;
+        } else {
+          // La consulta no fue exitosa
+          print("Error");
+          return 0;
+        }
+
+        // if (datauser.lenght == 0) {
+        //   print("errrrrrrrroooooooooooorrrrrrrrrrrrrrrr");
+        // } else {
+        //   print("piolaaaaaaaaaaaaaaaaaaaa");
+        // }
+      }
+    } catch (e) {
+      print("ufff, entró en el catch");
+      print(e);
+      return 0;
+    }
+    return 0;
+  }
+
+  Future<dynamic> _buscarAlumno(String idAlumno) async {
+    try {
+      final response = await http.post(
+          Uri.parse("http://127.0.0.1/justy/buscaralumno.php"),
+          body: {"numero_control": idAlumno});
+
+      if (response.statusCode == 200) {
+        var datauser = jsonDecode(response.body);
+        var mensaje = datauser.toString();
+
+        if (mensaje.length > 0) {
+          // La consulta fue exitosa
+          return datauser;
+        }
+      }
+    } catch (e) {
+      print("ufff, entró en el catch");
+      print(e);
+      return [];
+    }
+    return [];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: <Widget>[
           _crearFondo(context),
-          _crearFormulario(context),
+          _crearEditarFormulario(context, widget.idAlumno),
         ],
       ),
     );
   }
 
-  Widget _crearFormulario(BuildContext context) {
+  // Widget _editarFormulario()
+  // {
+
+  // }
+
+  Widget _formularioAlumno(BuildContext context, AsyncSnapshot? snapshot) {
     final size = MediaQuery.of(context).size;
 
     return SingleChildScrollView(
@@ -74,7 +184,7 @@ class _AlumnoPageState extends State<AlumnoPage> {
               child: Column(
                 children: <Widget>[
                   Text(
-                    'Registro Alumno',
+                    titulo,
                     style: TextStyle(
                         fontSize: 30.0,
                         color: Color(0xFFFF5B4A42),
@@ -83,35 +193,35 @@ class _AlumnoPageState extends State<AlumnoPage> {
                   SizedBox(
                     height: 30.0,
                   ),
-                  _crearNumcontrol(),
+                  _crearNumcontrol(
+                      snapshot != null ? snapshot.data[0]["numControl"] : null),
                   SizedBox(
                     height: 20.0,
                   ),
-                  _crearNombre(),
+                  _crearNombre(
+                      snapshot != null ? snapshot.data[0]["nombre"] : null),
                   SizedBox(
                     height: 20.0,
                   ),
-                  _semestre(),
+                  _semestre(
+                      snapshot != null ? snapshot.data[0]["semestre"] : null),
                   SizedBox(
                     height: 20.0,
                   ),
 
-                  _grupo(),
-
-                  SizedBox(
-                    width: 30,
-                  ),
-                  _turno(),
-
-                  SizedBox(
+                  _grupo(
+                      snapshot != null ? snapshot.data[0]["grupo_id"] : null),
+                  const SizedBox(
                     height: 20.0,
                   ),
-                  _especialidad(),
-                  SizedBox(
+                  _especialidad(snapshot != null
+                      ? snapshot.data[0]["especialidad"]
+                      : null),
+                  const SizedBox(
                     height: 30.0,
                   ),
                   _crearBoton(),
-                  SizedBox(
+                  const SizedBox(
                     height: 30.0,
                   ),
                   // _crearBoton(bloc)
@@ -124,11 +234,12 @@ class _AlumnoPageState extends State<AlumnoPage> {
     );
   }
 
-  Widget _crearNumcontrol() {
+  Widget _crearNumcontrol(String? numeroControl) {
+    _numeroControl.text = numeroControl ?? "";
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
+        const Text(
           'Número de control',
           style: TextStyle(
               color: Color(0xFFFF5B4A42),
@@ -140,9 +251,10 @@ class _AlumnoPageState extends State<AlumnoPage> {
           height: 15,
         ),
         TextFormField(
+          controller: _numeroControl,
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
-              prefixIcon: Icon(
+              prefixIcon: const Icon(
                 Icons.numbers,
                 color: Colors.black,
               ),
@@ -157,11 +269,12 @@ class _AlumnoPageState extends State<AlumnoPage> {
     );
   }
 
-  Widget _crearNombre() {
+  Widget _crearNombre(String? nombre) {
+    _nombre.text = nombre ?? "";
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
+        const Text(
           'Nombre(s)',
           style: TextStyle(
               color: Color(0xFFFF5B4A42),
@@ -169,10 +282,11 @@ class _AlumnoPageState extends State<AlumnoPage> {
               fontWeight: FontWeight.w500),
           textAlign: TextAlign.end,
         ),
-        SizedBox(
+        const SizedBox(
           height: 15,
         ),
         TextFormField(
+          controller: _nombre,
           decoration: InputDecoration(
               prefixIcon: Icon(
                 Icons.person,
@@ -189,114 +303,6 @@ class _AlumnoPageState extends State<AlumnoPage> {
     );
   }
 
-  /**Widget _apellidoUno() {
-    return Container(
-      child: ListTile(
-        title: Text(
-          'Primer apellido',
-          style: TextStyle(
-            fontSize: 16,
-            color: Color(0xFFFF5B4A42),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        subtitle: TextFormField(
-          decoration: const InputDecoration(
-            prefixIcon: Icon(
-              Icons.person,
-              color: Colors.black,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(30)),
-            ),
-            hintText: '',
-            enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(30)),
-                borderSide: BorderSide(
-                  color: Color(0xFFFF5B4A42),
-                  width: 1.5,
-                )),
-            focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(30)),
-                borderSide: BorderSide(
-                  color: Color(0xFFFF5B4A42),
-                  width: 1.5,
-                )),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _apellidoDos() {
-    return ListTile(
-      title: Text(
-        'Primer apellido',
-        style: TextStyle(
-          fontSize: 16,
-          color: Color(0xFFFF5B4A42),
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: TextFormField(
-        decoration: const InputDecoration(
-          prefixIcon: Icon(
-            Icons.person,
-            color: Colors.black,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(30)),
-          ),
-          hintText: '',
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(30)),
-              borderSide: BorderSide(
-                color: Color(0xFFFF5B4A42),
-                width: 1.5,
-              )),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(30)),
-              borderSide: BorderSide(
-                color: Color(0xFFFF5B4A42),
-                width: 1.5,
-              )),
-        ),
-      ),
-    );
-  }
-
-  Widget _telefono() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          'Teléfono',
-          style: TextStyle(
-              color: Color(0xFFFF5B4A42),
-              fontSize: 16,
-              fontWeight: FontWeight.w500),
-          textAlign: TextAlign.end,
-        ),
-        SizedBox(
-          height: 15,
-        ),
-        TextFormField(
-          decoration: InputDecoration(
-              prefixIcon: Icon(
-                Icons.phone,
-                color: Colors.black,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30.0),
-              ),
-              hintText: '',
-              enabledBorder: borde(),
-              focusedBorder: borde()),
-        ),
-      ],
-    );
-  }*/
-
   List<DropdownMenuItem<String>> getOpcionesDropdown() {
     List<DropdownMenuItem<String>> lista = [];
 
@@ -310,30 +316,21 @@ class _AlumnoPageState extends State<AlumnoPage> {
     return lista;
   }
 
-  List<DropdownMenuItem<String>> getOpcionesGrupo() {
+  List<DropdownMenuItem<String>> getOpcionesGrupo(List<dynamic> _grupos) {
     List<DropdownMenuItem<String>> lista2 = [];
 
-    _group.forEach((opcion1) {
+    _grupos.forEach((opcion) {
+      print(opcion);
+      print(opcion["nomenclatura"]);
       lista2.add(DropdownMenuItem(
-        child: Text(opcion1),
-        value: opcion1,
+        child: Text(opcion["nomenclatura"]),
+        value: opcion["nomenclatura"],
       ));
     });
 
     return lista2;
-  }
 
-  List<DropdownMenuItem<String>> getOpcionesTurno() {
-    List<DropdownMenuItem<String>> lista3 = [];
-
-    _turn.forEach((opcion2) {
-      lista3.add(DropdownMenuItem(
-        child: Text(opcion2),
-        value: opcion2,
-      ));
-    });
-
-    return lista3;
+    return lista2;
   }
 
   List<DropdownMenuItem<String>> getOpcionesEspecialidad() {
@@ -349,164 +346,143 @@ class _AlumnoPageState extends State<AlumnoPage> {
     return lista4;
   }
 
-  Widget _semestre() {
+  Widget _semestre(String? semestre) {
+    _semestreSele = semestre ?? _semestreSele;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
           'Semestre',
           style: TextStyle(
-              color: Color(0xFFFF5B4A42),
-              fontSize: 16,
-              fontWeight: FontWeight.w500),
+            color: Color(0xFFFF5B4A42),
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
           textAlign: TextAlign.end,
         ),
-        SizedBox(
-          height: 15,
-        ),
-        DropdownButtonFormField(
-          decoration: InputDecoration(
-              prefixIcon: Icon(
-                Icons.group,
-                color: Colors.black,
+        SizedBox(height: 15),
+        StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return DropdownButtonFormField(
+              decoration: InputDecoration(
+                prefixIcon: Icon(
+                  Icons.group,
+                  color: Colors.black,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+                hintText: '',
+                enabledBorder: borde(),
+                focusedBorder: borde(),
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30.0),
-              ),
-              hintText: '',
-              enabledBorder: borde(),
-              focusedBorder: borde()),
-          style: TextStyle(color: Colors.black),
-          value: _semestreSele,
-          items: getOpcionesDropdown(),
-          onChanged: (opt) {
-            setState(() {
-              _semestreSele = opt!;
-            });
+              style: TextStyle(color: Colors.black),
+              value: _semestreSele,
+              items: getOpcionesDropdown(),
+              onChanged: (opt) {
+                setState(() {
+                  _semestreSele = opt!;
+                });
+              },
+            );
           },
         ),
       ],
     );
   }
 
-  Widget _grupo() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          'Grupo',
-          style: TextStyle(
-              color: Color(0xFFFF5B4A42),
-              fontSize: 16,
-              fontWeight: FontWeight.w500),
-          textAlign: TextAlign.end,
-        ),
-        SizedBox(
-          height: 15,
-        ),
-        DropdownButtonFormField(
-          decoration: InputDecoration(
-              prefixIcon: Icon(
-                Icons.group,
-                color: Colors.black,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30.0),
-              ),
-              hintText: '',
-              enabledBorder: borde(),
-              focusedBorder: borde()),
-          style: TextStyle(color: Colors.black),
-          value: _groupSele,
-          items: getOpcionesGrupo(),
-          onChanged: (opt) {
-            setState(() {
-              _groupSele = opt!;
-            });
-          },
-        ),
-      ],
-    );
+  Widget _grupo(String? grupo) {
+    return FutureBuilder(
+        future: _listarGrupos(),
+        builder: (BuildContext context, AsyncSnapshot snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else {
+            _groupSele = grupo ?? snapshot.data[0]["nomenclatura"];
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Text(
+                  'Grupo',
+                  style: TextStyle(
+                    color: Color(0xFFFF5B4A42),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.end,
+                ),
+                SizedBox(height: 15),
+                StatefulBuilder(
+                  builder: (BuildContext context, StateSetter setState) {
+                    return DropdownButtonFormField(
+                      decoration: InputDecoration(
+                        prefixIcon: Icon(
+                          Icons.group,
+                          color: Colors.black,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30.0),
+                        ),
+                        hintText: '',
+                        enabledBorder: borde(),
+                        focusedBorder: borde(),
+                      ),
+                      style: TextStyle(color: Colors.black),
+                      value: _groupSele,
+                      items: getOpcionesGrupo(snapshot.data),
+                      onChanged: (opt) {
+                        setState(() {
+                          _groupSele = opt!;
+                        });
+                      },
+                    );
+                  },
+                ),
+              ],
+            );
+          }
+        });
   }
 
-  Widget _turno() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        SizedBox(
-          height: 15,
-        ),
-        Text(
-          'Turno',
-          style: TextStyle(
-              color: Color(0xFFFF5B4A42),
-              fontSize: 16,
-              fontWeight: FontWeight.w500),
-          textAlign: TextAlign.end,
-        ),
-        SizedBox(
-          height: 15,
-        ),
-        DropdownButtonFormField(
-          decoration: InputDecoration(
-              prefixIcon: Icon(
-                Icons.settings_display,
-                color: Colors.black,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30.0),
-              ),
-              hintText: '',
-              enabledBorder: borde(),
-              focusedBorder: borde()),
-          style: TextStyle(color: Colors.black),
-          value: _turnSele,
-          items: getOpcionesTurno(),
-          onChanged: (opt) {
-            setState(() {
-              _turnSele = opt!;
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _especialidad() {
+  Widget _especialidad(String? especialidad) {
+    _espeSele = especialidad ?? _espeSele;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
           'Especialidad',
           style: TextStyle(
-              color: Color(0xFFFF5B4A42),
-              fontSize: 16,
-              fontWeight: FontWeight.w500),
+            color: Color(0xFFFF5B4A42),
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
           textAlign: TextAlign.end,
         ),
-        SizedBox(
-          height: 15,
-        ),
-        DropdownButtonFormField(
-          
-          decoration: InputDecoration(
-              prefixIcon: Icon(
-                Icons.book,
-                color: Colors.black,
+        SizedBox(height: 15),
+        StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return DropdownButtonFormField(
+              decoration: InputDecoration(
+                prefixIcon: Icon(
+                  Icons.book,
+                  color: Colors.black,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+                hintText: '',
+                enabledBorder: borde(),
+                focusedBorder: borde(),
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30.0),
-              ),
-              hintText: '',
-              enabledBorder: borde(),
-              focusedBorder: borde()),
-          style: TextStyle(color: Colors.black),
-          value: _espeSele,
-          items: getOpcionesEspecialidad(),
-          onChanged: (opt) {
-            setState(() {
-              _espeSele = opt!;
-            });
+              style: TextStyle(color: Colors.black),
+              value: _espeSele,
+              items: getOpcionesEspecialidad(),
+              onChanged: (opt) {
+                setState(() {
+                  _espeSele = opt!;
+                });
+              },
+            );
           },
         ),
       ],
@@ -518,7 +494,7 @@ class _AlumnoPageState extends State<AlumnoPage> {
       // padding: EdgeInsets.symmetric(horizontal: 80.0, vertical: 15.0),
 
       child: Text(
-        'Guardar',
+        tituloBoton,
         style: TextStyle(
           fontSize: 20,
         ),
@@ -530,7 +506,16 @@ class _AlumnoPageState extends State<AlumnoPage> {
         elevation: 0.0,
         backgroundColor: Color(0xFFFFB8876D),
       ),
-      onPressed: () {},
+      onPressed: () async {
+        print("papuuuuuuuuuuu");
+        if (widget.idAlumno != null) {
+          if (await _editarAlumno(widget.idAlumno!, _numeroControl.text,
+                  _nombre.text, _semestreSele, _groupSele, _espeSele) >
+              0) {
+            widget.idAlumno = _numeroControl.text;
+          }
+        } else {}
+      },
       //onPressed: snapshot.hasData ? () => _login(bloc, context) : null,
     );
   }
@@ -572,5 +557,23 @@ class _AlumnoPageState extends State<AlumnoPage> {
         )
       ],
     );
+  }
+
+  Widget _crearEditarFormulario(BuildContext context, String? idAlumno) {
+    if (idAlumno != null) {
+      return FutureBuilder(
+        future: _buscarAlumno(idAlumno),
+        builder: (BuildContext context, AsyncSnapshot snapshot) {
+          print(snapshot.data);
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else {
+            return _formularioAlumno(context, snapshot);
+          }
+        },
+      );
+    } else {
+      return _formularioAlumno(context, null);
+    }
   }
 }

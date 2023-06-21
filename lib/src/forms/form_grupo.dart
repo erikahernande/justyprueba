@@ -1,14 +1,17 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class GrupoPage extends StatefulWidget {
-
   @override
   State<GrupoPage> createState() => _GrupoPageState();
 }
 
 class _GrupoPageState extends State<GrupoPage> {
-
-String _docenteSele = 'Noé Solis';
+  TextEditingController nomenclaturaController = TextEditingController();
+  TextEditingController aulaController = TextEditingController();
+//String _docenteSele = 'Noé Solis';
 
   List<String> _docenteGrad = [
     'Noé Solis',
@@ -31,6 +34,41 @@ String _docenteSele = 'Noé Solis';
     );
   }
 
+  Future<int> _crearGrupo(String nomenclatura, String aula) async {
+    try {
+      final response = await http.post(
+          Uri.parse("http://127.0.0.1/justy/agregargrup.php"),
+          body: {"nomenclatura": nomenclatura, "aula": aula});
+
+      if (response.statusCode == 200) {
+        print("vamos los pibes");
+        var datauser = json.decode(response.body);
+        var mensaje = datauser.toString();
+
+        if (mensaje == "Success") {
+          // La consulta fue exitosa
+          print("Inicio de sesión exitoso");
+          return 1;
+        } else {
+          // La consulta no fue exitosa
+          print("Error");
+          return 0;
+        }
+
+        // if (datauser.lenght == 0) {
+        //   print("errrrrrrrroooooooooooorrrrrrrrrrrrrrrr");
+        // } else {
+        //   print("piolaaaaaaaaaaaaaaaaaaaa");
+        // }
+      }
+    } catch (e) {
+      print("ufff, entró en el catch");
+      print(e);
+      return 0;
+    }
+    return 0;
+  }
+
   Widget _crearLogin(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
@@ -43,22 +81,21 @@ String _docenteSele = 'Noé Solis';
           )),
           Container(
             width: size.width * 0.90,
-              margin: EdgeInsets.symmetric(vertical: 20.0),
-              padding: EdgeInsets.all(10),
-              //padding: EdgeInsets.symmetric(vertical: 50.0),
-              decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(5.0),
-                  // sombreado
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                        color: Colors.white,
-                        blurRadius: 3.0,
-                        offset: Offset(0.0, 5.0),
-                        spreadRadius: 2.0)
-                  ]),
+            margin: EdgeInsets.symmetric(vertical: 20.0),
+            padding: EdgeInsets.all(10),
+            //padding: EdgeInsets.symmetric(vertical: 50.0),
+            decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(5.0),
+                // sombreado
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                      color: Colors.white,
+                      blurRadius: 3.0,
+                      offset: Offset(0.0, 5.0),
+                      spreadRadius: 2.0)
+                ]),
             child: Form(
-              
               child: Column(
                 children: <Widget>[
                   Text(
@@ -79,11 +116,11 @@ String _docenteSele = 'Noé Solis';
                   SizedBox(
                     height: 30.0,
                   ),
-          
+
                   SizedBox(
                     height: 30.0,
                   ),
-          
+
                   _crearBoton(),
                   SizedBox(
                     height: 30.0,
@@ -117,6 +154,7 @@ String _docenteSele = 'Noé Solis';
           //shadowColor: ShadowColo,
 
           child: TextFormField(
+            controller: nomenclaturaController,
             decoration: InputDecoration(
                 prefixIcon: Icon(
                   Icons.numbers,
@@ -150,6 +188,7 @@ String _docenteSele = 'Noé Solis';
           height: 15,
         ),
         TextFormField(
+          controller: aulaController,
           decoration: InputDecoration(
               prefixIcon: Icon(
                 Icons.doorbell,
@@ -196,7 +235,18 @@ String _docenteSele = 'Noé Solis';
         elevation: 0.0,
         backgroundColor: Color(0xFFFFB8876D),
       ),
-      onPressed: () {},
+      onPressed: () async {
+        if (nomenclaturaController.text.length > 0 &&
+            aulaController.text.length > 0) {
+          if (await _crearGrupo(
+                  nomenclaturaController.text, aulaController.text) >
+              0) {
+            print("Exitoso guardado");
+          } else {
+            print("No se guardó");
+          }
+        }
+      },
       //onPressed: snapshot.hasData ? () => _login(bloc, context) : null,
     );
   }
@@ -219,8 +269,7 @@ String _docenteSele = 'Noé Solis';
       height: 220,
       width: double.infinity,
       decoration: BoxDecoration(
-           color: Color(0xFFFF6E7D3),
-          borderRadius: BorderRadius.circular(50.0)),
+          color: Color(0xFFFF6E7D3), borderRadius: BorderRadius.circular(50.0)),
     );
 
     return Stack(

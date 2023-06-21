@@ -1,6 +1,14 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+// ignore: must_be_immutable
 class LoginPage extends StatelessWidget {
+  String mensaje = "";
+
+  LoginPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -15,6 +23,41 @@ class LoginPage extends StatelessWidget {
       ),
     ));
   }
+}
+
+Future<int> _login() async {
+  try {
+    final response = await http.post(
+        Uri.parse("http://127.0.0.1/justy/login.php"),
+        body: {"username": "Mariana", "password": "1234"});
+
+    if (response.statusCode == 200) {
+      print("vamos los pibes");
+      var datauser = json.decode(response.body);
+      var mensaje = datauser.toString();
+
+      if (mensaje == "Success papuuuuuu") {
+        // La consulta fue exitosa
+        print("Inicio de sesión exitoso");
+        return 1;
+      } else {
+        // La consulta no fue exitosa
+        print("Error en el inicio de sesión");
+        return 0;
+      }
+
+      // if (datauser.lenght == 0) {
+      //   print("errrrrrrrroooooooooooorrrrrrrrrrrrrrrr");
+      // } else {
+      //   print("piolaaaaaaaaaaaaaaaaaaaa");
+      // }
+    }
+  } catch (e) {
+    print("ufff, entró en el catch");
+    print(e);
+    return 0;
+  }
+  return 0;
 }
 
 Widget _loginForm(BuildContext context) {
@@ -33,7 +76,7 @@ Widget _loginForm(BuildContext context) {
           padding: EdgeInsets.symmetric(vertical: 50.0),
           child: Column(
             children: <Widget>[
-              Text('Ingresar',
+              Text('Ingresarrr',
                   style: TextStyle(
                     fontSize: 45.0,
                     color: Color.fromRGBO(91, 74, 66, 1),
@@ -50,7 +93,10 @@ Widget _loginForm(BuildContext context) {
               TextButton(
                   onPressed: () =>
                       Navigator.pushReplacementNamed(context, 'registro'),
-                  child: Text('¿Aún no tienes una cuenta?, Créalo Aquí', style: TextStyle(color: Color.fromRGBO(91, 74, 66, 1) ),)),
+                  child: Text(
+                    '¿Aún no tienes una cuenta?, Créssalo Aquí',
+                    style: TextStyle(color: Color.fromRGBO(91, 74, 66, 1)),
+                  )),
               SizedBox(height: 6.0),
               SizedBox(height: 10.0),
               _crearBoton(context)
@@ -174,8 +220,13 @@ Widget _crearBoton(context) {
     // color: Colors.deepPurple,
     // textColor: Colors.white,
     //onPressed: snapshot.hasData ? ()=> _login(bloc, context) : null
-    onPressed: () {
-      Navigator.pushNamed(context, 'inicio');
+    onPressed: () async {
+      var inicio = await _login();
+      if (inicio == 1) {
+        Navigator.pushNamed(context, 'inicio');
+      } else {
+        print("no papuuuuuuu");
+      }
     },
   );
 }

@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class RegistroPage extends StatelessWidget {
   @override
@@ -15,6 +18,44 @@ class RegistroPage extends StatelessWidget {
       ),
     ));
   }
+}
+
+TextEditingController _emailController = TextEditingController();
+TextEditingController _passwordController = TextEditingController();
+
+Future<int> _registro(String email, String password) async {
+  try {
+    final response = await http.post(
+        Uri.parse("http://127.0.0.1/justy/registro.php"),
+        body: {"username": email, "password": password});
+
+    if (response.statusCode == 200) {
+      print("vamos los pibes");
+      var datauser = json.decode(response.body);
+      var mensaje = datauser.toString();
+
+      if (mensaje == "Success") {
+        // La consulta fue exitosa
+        print("Inicio de sesión exitoso");
+        return 1;
+      } else {
+        // La consulta no fue exitosa
+        print("Error");
+        return 0;
+      }
+
+      // if (datauser.lenght == 0) {
+      //   print("errrrrrrrroooooooooooorrrrrrrrrrrrrrrr");
+      // } else {
+      //   print("piolaaaaaaaaaaaaaaaaaaaa");
+      // }
+    }
+  } catch (e) {
+    print("ufff, entró en el catch");
+    print(e);
+    return 0;
+  }
+  return 0;
 }
 
 Widget _loginForm(BuildContext context) {
@@ -50,7 +91,10 @@ Widget _loginForm(BuildContext context) {
               TextButton(
                   onPressed: () =>
                       Navigator.pushReplacementNamed(context, 'login'),
-                  child: Text('¿ya tienes una cuenta?, Ingresa aquí', style: TextStyle(color: Color.fromRGBO(91, 74, 66, 1) ),)),
+                  child: Text(
+                    '¿ya tienes una cuenta?, Ingresa aquí',
+                    style: TextStyle(color: Color.fromRGBO(91, 74, 66, 1)),
+                  )),
               SizedBox(height: 6.0),
               SizedBox(height: 10.0),
               _crearBoton(context)
@@ -109,7 +153,7 @@ Widget _crearEmail() {
         ]),
     child: TextField(
       keyboardType: TextInputType.emailAddress,
-
+      controller: _emailController,
       decoration: InputDecoration(
         hintText: 'ejemplo@correo.com',
         border: InputBorder.none,
@@ -138,6 +182,7 @@ Widget _crearPassword() {
               )
         ]),
     child: TextField(
+      controller: _passwordController,
       obscureText: true,
       decoration: InputDecoration(
         border: InputBorder.none,
@@ -175,7 +220,14 @@ Widget _crearBoton(context) {
     // textColor: Colors.white,
     //onPressed: snapshot.hasData ? ()=> _login(bloc, context) : null
     onPressed: () {
-      Navigator.pushNamed(context, 'inicio');
+      if (_emailController.text.length > 0 &&
+          _passwordController.text.length > 0) {
+        var registro =
+            _registro(_emailController.text, _passwordController.text);
+        if (registro == 1) {
+          Navigator.pushNamed(context, 'inicio');
+        }
+      }
     },
   );
 }

@@ -1,4 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'package:mailer/mailer.dart';
+import 'package:mailer/smtp_server.dart';
+import 'package:mailer/smtp_server/gmail.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class JustificacionPage extends StatefulWidget {
   @override
@@ -16,7 +24,60 @@ class _JustificacionPageState extends State<JustificacionPage> {
     'Sexto'
   ];
 
-  String _grupSele = '6AMR';
+  Future<void> sendEmail() async {
+    try {
+      var userEmail = 'kumulsaul@gmail.com';
+      var mensaje = Message();
+      mensaje.subject = "Enviado de Flutter papu";
+      mensaje.text = "Hola papuuuuuuuuuuuuuuuu";
+      mensaje.from = Address(userEmail.toString());
+      mensaje.recipients.add(userEmail);
+      //var smtpServer = gmailSaslXoauth2(userEmail, "htargdhrkmtwnjtn");
+      var smtp = gmailRelaySaslXoauth2(userEmail, "htargdhrkmtwnjtn");
+      send(mensaje, smtp);
+      print('Email enviado correctanmente');
+    } catch (e) {
+      print(e);
+      print("Hubo un error al enviar el Email");
+    }
+  }
+
+  Future<int> _crearDocente(String nombre, String materia) async {
+    try {
+      final response = await http.post(
+          Uri.parse("http://127.0.0.1/justy/agregargrup.php"),
+          body: {"username": nombre, "password": materia});
+
+      if (response.statusCode == 200) {
+        print("vamos los pibes");
+        var datauser = json.decode(response.body);
+        var mensaje = datauser.toString();
+
+        if (mensaje == "Success") {
+          // La consulta fue exitosa
+          print("Inicio de sesión exitoso");
+          return 1;
+        } else {
+          // La consulta no fue exitosa
+          print("Error");
+          return 0;
+        }
+
+        // if (datauser.lenght == 0) {
+        //   print("errrrrrrrroooooooooooorrrrrrrrrrrrrrrr");
+        // } else {
+        //   print("piolaaaaaaaaaaaaaaaaaaaa");
+        // }
+      }
+    } catch (e) {
+      print("ufff, entró en el catch");
+      print(e);
+      return 0;
+    }
+    return 0;
+  }
+
+  //String _grupSele = '6AMR';
   List<String> _grupGrad = [
     'Primer',
     'Programacion',
@@ -73,37 +134,9 @@ class _JustificacionPageState extends State<JustificacionPage> {
                       fontWeight: FontWeight.bold),
                 ),
                 SizedBox(
-                  height: 30.0,
-                ),
-                _crearNumcontrol(),
-                SizedBox(
-                  height: 30.0,
-                ),
-                _crearNombre(),
-                SizedBox(
-                  height: 30.0,
-                ),
-
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: _apellidoUno(),
-                    ),
-                    Expanded(child: _apellidoDos())
-                  ],
-                ),
-                SizedBox(
-                  height: 10.0,
-                ),
-                _especialidad(),
-                SizedBox(
                   height: 10.0,
                 ),
                 _grupo(),
-                SizedBox(
-                  height: 10.0,
-                ),
-                _semestre(),
                 SizedBox(
                   height: 10.0,
                 ),
@@ -145,148 +178,6 @@ class _JustificacionPageState extends State<JustificacionPage> {
     );
   }
 
-  Widget _crearNumcontrol() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          'Número de control',
-          style: TextStyle(
-              color: Color(0xFFFF5B4A42),
-              fontSize: 16,
-              fontWeight: FontWeight.w500),
-          textAlign: TextAlign.end,
-        ),
-        SizedBox(
-          height: 15,
-        ),
-        Material(
-          //shadowColor: ShadowColo,
-
-          child: TextFormField(
-            decoration: InputDecoration(
-                prefixIcon: Icon(
-                  Icons.numbers,
-                  color: Colors.black,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                ),
-                hintText: '',
-                enabledBorder: borde(),
-                focusedBorder: borde()),
-          ),
-        )
-      ],
-    );
-  }
-
-  Widget _crearNombre() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          'Nombre(s)',
-          style: TextStyle(
-              color: Color(0xFFFF5B4A42),
-              fontSize: 16,
-              fontWeight: FontWeight.w500),
-          textAlign: TextAlign.end,
-        ),
-        SizedBox(
-          height: 15,
-        ),
-        TextFormField(
-          decoration: InputDecoration(
-              prefixIcon: Icon(
-                Icons.person,
-                color: Colors.black,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30.0),
-              ),
-              hintText: '',
-              enabledBorder: borde(),
-              focusedBorder: borde()),
-        ),
-      ],
-    );
-  }
-
-  Widget _apellidoUno() {
-    return ListTile(
-      title: Text(
-        'Primer apellido',
-        style: TextStyle(
-          fontSize: 16,
-          color: Color(0xFFFF5B4A42),
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: TextFormField(
-        decoration: const InputDecoration(
-          prefixIcon: Icon(
-            Icons.person,
-            color: Colors.black,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(30)),
-          ),
-          hintText: '',
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(30)),
-              borderSide: BorderSide(
-                color: Color(0xFFFF5B4A42),
-                width: 1.5,
-              )),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(30)),
-              borderSide: BorderSide(
-                color: Color(0xFFFF5B4A42),
-                width: 1.5,
-              )),
-        ),
-      ),
-    );
-  }
-
-  Widget _apellidoDos() {
-    return ListTile(
-      title: Text(
-        'Primer apellido',
-        style: TextStyle(
-          fontSize: 16,
-          color: Color(0xFFFF5B4A42),
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: TextFormField(
-        decoration: const InputDecoration(
-          prefixIcon: Icon(
-            Icons.person,
-            color: Colors.black,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(30)),
-          ),
-          hintText: '',
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(30)),
-              borderSide: BorderSide(
-                color: Color(0xFFFF5B4A42),
-                width: 1.5,
-              )),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(30)),
-              borderSide: BorderSide(
-                color: Color(0xFFFF5B4A42),
-                width: 1.5,
-              )),
-        ),
-      ),
-    );
-  }
-
   List<DropdownMenuItem<String>> getOpcionesDropdown() {
     List<DropdownMenuItem<String>> lista = [];
 
@@ -298,86 +189,6 @@ class _JustificacionPageState extends State<JustificacionPage> {
     });
 
     return lista;
-  }
-
-  Widget _especialidad() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          'Especialidad',
-          style: TextStyle(
-              color: Color(0xFFFF5B4A42),
-              fontSize: 16,
-              fontWeight: FontWeight.w500),
-          textAlign: TextAlign.end,
-        ),
-        SizedBox(
-          height: 15,
-        ),
-        DropdownButtonFormField(
-          decoration: InputDecoration(
-              prefixIcon: Icon(
-                Icons.group,
-                color: Colors.black,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30.0),
-              ),
-              hintText: '',
-              enabledBorder: borde(),
-              focusedBorder: borde()),
-          style: TextStyle(color: Colors.black),
-          value: _espeSele,
-          items: getOpcionesDropdown(),
-          onChanged: (opt) {
-            setState(() {
-              _espeSele = opt!;
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _semestre() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          'Semestre',
-          style: TextStyle(
-              color: Color(0xFFFF5B4A42),
-              fontSize: 16,
-              fontWeight: FontWeight.w500),
-          textAlign: TextAlign.end,
-        ),
-        SizedBox(
-          height: 15,
-        ),
-        DropdownButtonFormField(
-          decoration: InputDecoration(
-              prefixIcon: Icon(
-                Icons.group,
-                color: Colors.black,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30.0),
-              ),
-              hintText: '',
-              enabledBorder: borde(),
-              focusedBorder: borde()),
-          style: TextStyle(color: Colors.black),
-          value: _espeSele,
-          items: getOpcionesDropdown(),
-          onChanged: (opt) {
-            setState(() {
-              _espeSele = opt!;
-            });
-          },
-        ),
-      ],
-    );
   }
 
   List<DropdownMenuItem<String>> getOpcionesGrup() {
@@ -666,7 +477,9 @@ class _JustificacionPageState extends State<JustificacionPage> {
         elevation: 0.0,
         backgroundColor: Color(0xFFFFB8876D),
       ),
-      onPressed: () {},
+      onPressed: () async {
+        await sendEmail();
+      },
       //onPressed: snapshot.hasData ? () => _login(bloc, context) : null,
     );
   }

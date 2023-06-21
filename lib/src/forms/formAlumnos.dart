@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import '../inicio_page.dart';
+import 'package:justy_app/src/pages/inicio_page.dart';
 
 class formAlumno extends StatefulWidget {
-  final List? list;
-  final int? index;
-  formPersona({this.list, this.index});
+  late final List? list;
+  late final int? index;
+  formAlumno({this.list, this.index});
   @override
-  _formPersonaState createState() => _formPersonaState();
+  State<formAlumno> createState() => _formPersonaState();
 }
 
-class _formPersonaState extends State<formPersona> {
+class _formPersonaState extends State<formAlumno> {
 //CONTROLADORES
   TextEditingController nombre = TextEditingController();
   TextEditingController apellidoM = TextEditingController();
